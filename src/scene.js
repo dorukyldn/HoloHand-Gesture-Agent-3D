@@ -19,6 +19,8 @@ uniform float uPR;
 uniform float uScatter;
 uniform float uHi;
 uniform float uSel;
+uniform float uFocus;
+uniform float uFocusMix;
 uniform vec3 uOff[${MAXP}];
 varying vec3 vColor;
 varying float vA;
@@ -32,9 +34,11 @@ void main() {
   float sel = abs(aPart - uSel) < 0.5 ? 1.0 : 0.0;
   float tw = 0.82 + 0.18 * sin(uTime * 2.0 + aSeed * 60.0);
   float boost = max(hi, sel);
-  gl_PointSize = uSize * uPR * (0.8 + 0.5 * fract(aSeed * 7.13)) * (1.0 + 0.7 * boost) * (${CAM_Z.toFixed(1)} / -mv.z);
+  float foc = abs(aPart - uFocus) < 0.5 ? 1.0 : 0.0;
+  float dimF = uFocusMix * (1.0 - foc);
+  gl_PointSize = uSize * uPR * (0.8 + 0.5 * fract(aSeed * 7.13)) * (1.0 + 0.7 * boost) * (1.0 + 0.5 * uFocusMix * foc - 0.35 * dimF) * (${CAM_Z.toFixed(1)} / -mv.z);
   vColor = mix(aColor * tw, vec3(1.0), 0.45 * boost);
-  vA = (0.9 - 0.9 * uScatter) * (1.0 + 0.2 * boost);
+  vA = (0.9 - 0.9 * uScatter) * (1.0 + 0.2 * boost) * (1.0 - 0.93 * dimF);
   gl_Position = projectionMatrix * mv;
 }`;
 
@@ -72,6 +76,8 @@ export class HoloScene {
       uScatter: { value: 1 },
       uHi: { value: -1 },
       uSel: { value: -1 },
+      uFocus: { value: -1 },
+      uFocusMix: { value: 0 },
       uOff: { value: Array.from({ length: MAXP }, () => new THREE.Vector3()) },
     };
     this.material = new THREE.ShaderMaterial({
@@ -100,6 +106,12 @@ export class HoloScene {
     this.index = -1;
     this.hover = -1;
     this.sel = -1;
+    this.focus = -1; // part the view is locked on
+    this.focusShown = -1; // stays set while the view eases back out
+    this.focusMix = 0;
+    this.focusZoom = 1;
+    this.focusC = new THREE.Vector3();
+    this.focusV = new THREE.Vector3();
     this.shift = 0;
     this.offT = Array.from({ length: MAXP }, () => new THREE.Vector3());
     this.cache = new Map();
@@ -220,6 +232,10 @@ export class HoloScene {
     this.sel = -1;
     this.uniforms.uHi.value = -1;
     this.uniforms.uSel.value = -1;
+    this.focus = this.focusShown = -1;
+    this.focusMix = 0;
+    this.uniforms.uFocus.value = -1;
+    this.uniforms.uFocusMix.value = 0;
     this.releaseAll(true);
     const v = this.models[i].view;
     this.rot.x = v.x;
@@ -250,6 +266,16 @@ export class HoloScene {
     this.sel = i;
     this.uniforms.uSel.value = i;
   }
+  /** Lock the view on one part: the rest dims and the part fills the screen. -1 lets go. */
+  setFocus(i) {
+    this.focus = i;
+    if (i >= 0) {
+      this.focusShown = i;
+      this.uniforms.uFocus.value = i;
+      this.setSel(i);
+    }
+    this.idle = 0;
+  }
   rotateBy(dyaw, dpitch, dt = 1 / 60) {
     this.rot.y += dyaw;
     this.rot.x = clamp(this.rot.x + dpitch, -1.4, 1.4);
@@ -273,6 +299,7 @@ export class HoloScene {
     this.scaleTarget = 1;
     this.releaseAll();
     this.setSel(-1);
+    this.setFocus(-1);
   }
   /** move a part by a screen-space pixel delta */
   dragPart(i, dx, dy) {
@@ -303,6 +330,7 @@ export class HoloScene {
     let bd = maxDist;
     this.group.updateMatrixWorld(true);
     this.parts.forEach((p, i) => {
+      if (this.focus >= 0 && i !== this.focus) return;
       const s = p.samples;
       const off = this.uniforms.uOff.value[i];
       for (let k = 0; k < s.length; k += 6) {
@@ -336,6 +364,37 @@ export class HoloScene {
   }
 
   // ------------------------------------------------------------------ frame
+  _updateFocus(dt) {
+    const want = this.focus >= 0 ? 1 : 0;
+    this.focusMix = damp(this.focusMix, want, 4.5, dt);
+    if (!want && this.focusMix < 0.005) {
+      this.focusMix = 0;
+      this.focusShown = -1;
+      this.uniforms.uFocus.value = -1;
+    }
+    this.uniforms.uFocusMix.value = this.focusMix;
+    if (this.focusShown < 0) return;
+    // centre and size of the part at its current explosion (grab offset left out, so it can still be dragged)
+    const s = this.parts[this.focusShown].samples;
+    const n = s.length / 6;
+    if (!n) return;
+    const e = this.shownExplode;
+    const step = Math.max(1, Math.floor(n / 400)) * 6;
+    let x = 0, y = 0, z = 0, c = 0;
+    for (let k = 0; k < s.length; k += step, c++) {
+      x += s[k] + s[k + 3] * e;
+      y += s[k + 1] + s[k + 4] * e;
+      z += s[k + 2] + s[k + 5] * e;
+    }
+    x /= c;
+    y /= c;
+    z /= c;
+    let r = 0;
+    for (let k = 0; k < s.length; k += step) r = Math.max(r, Math.hypot(s[k] + s[k + 3] * e - x, s[k + 1] + s[k + 4] * e - y, s[k + 2] + s[k + 5] * e - z));
+    this.focusC.set(x, y, z);
+    this.focusZoom = clamp(2.1 / (Math.max(r, 0.05) * this.fit), 1, 7);
+  }
+
   update(dt, t) {
     this.idle += dt;
     this.explode = damp(this.explode, this.explodeTarget, 5, dt);
@@ -369,8 +428,13 @@ export class HoloScene {
     this.uniforms.uExplode.value = this.explode * this.intensity;
     this.uniforms.uTime.value = t;
     this.group.rotation.set(this.rot.x, this.rot.y, this.rot.z, 'YXZ');
-    this.group.scale.setScalar(this.fit * this.scale);
-    this.group.position.x = this.shift;
+    this._updateFocus(dt);
+    const fm = this.focusMix;
+    const s = this.fit * this.scale * (1 + (this.focusZoom - 1) * fm);
+    this.group.scale.setScalar(s);
+    // slide the model so the focused part sits in the middle, and rotation turns around it
+    this.focusV.copy(this.focusC).multiplyScalar(s).applyEuler(this.group.rotation).multiplyScalar(fm);
+    this.group.position.set(this.shift - this.focusV.x, -this.focusV.y, -this.focusV.z);
     this.group.updateMatrixWorld(true);
     this.renderer.render(this.scene, this.camera);
   }

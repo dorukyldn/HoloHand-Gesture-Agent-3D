@@ -99,6 +99,7 @@ export class GestureEngine {
     else if (ext[0] && ext[1] && ext[2] && ext[3]) g = 'OPEN';
     else if (ext[0] && ext[1] && curl[2] && curl[3]) g = 'PEACE';
     else if (ext[0] && curl[1] && curl[2] && curl[3]) g = 'POINT';
+    else if (ext[0] && curl[1] && curl[2] && ext[3]) g = 'HORNS';
     else if (curl[0] && curl[1] && curl[2] && curl[3]) g = 'FIST';
 
     if (g === st.cand) st.streak++;
@@ -106,7 +107,7 @@ export class GestureEngine {
       st.cand = g;
       st.streak = 1;
     }
-    const need = g === 'PINCH' ? 2 : g === 'PEACE' ? 8 : 3;
+    const need = g === 'PINCH' ? 2 : g === 'PEACE' ? 8 : g === 'HORNS' ? 6 : 3;
     if (st.streak >= need && st.stable !== st.cand) st.stable = st.cand;
 
     // viewport-space positions

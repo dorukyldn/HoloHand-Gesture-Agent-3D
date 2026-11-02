@@ -88,6 +88,17 @@ function showPart(i) {
   $('pc-dot').style.background = p ? p.color : '#555a70';
 }
 
+function toggleFocus(i) {
+  if (scene.focus >= 0) {
+    scene.setFocus(-1);
+    toast('Focus off');
+  } else if (i >= 0) {
+    scene.setFocus(i);
+    showPart(i);
+    toast(`Focus: ${scene.parts[i].name}`);
+  } else toast('Point at a part first');
+}
+
 const rExplode = $('r-explode');
 const rInt = $('r-int');
 let draggingExplode = false;
@@ -109,6 +120,7 @@ $('b-reset').onclick = () => {
   showPart(-1);
 };
 $('b-next').onclick = () => scene.next();
+$('b-focus').onclick = () => toggleFocus(scene.sel);
 
 function toggle(id, key, after) {
   $(id).onclick = () => {
@@ -193,6 +205,7 @@ let grab = null;
 let lastHover = { i: -1, t: 0 };
 let dwell = { i: -1, t: 0 };
 let peaceCool = 0;
+let hornsLatched = false; // one toggle per rock sign, however long it is held
 const prevPalm = new Map();
 let activeKey = '';
 
@@ -229,6 +242,7 @@ function control(t, dt) {
 
   const h = live[0];
   if (!h) {
+    hornsLatched = false;
     endGrab();
     scene.holdVel = draggingMouse;
     if (!draggingMouse) scene.setHover(-1);
@@ -282,6 +296,15 @@ function control(t, dt) {
         scene.dragPart(grab.part, pp.x - grab.last.x, pp.y - grab.last.y);
         grab.last = pp;
       }
+    } else if (g === 'HORNS') {
+      if (!hornsLatched) {
+        hornsLatched = true;
+        // the index fingertip aims, then whatever was just pointed at
+        let idx = scene.pick(h.tip.x * W, h.tip.y * H, 130);
+        if (idx < 0) idx = scene.sel;
+        if (idx < 0 && t - lastHover.t < 3) idx = lastHover.i;
+        toggleFocus(idx);
+      }
     } else if (g === 'PEACE') {
       if (t > peaceCool) {
         peaceCool = t + 1.6;
@@ -291,6 +314,7 @@ function control(t, dt) {
     setActive(g);
   }
   if (g !== 'PINCH') endGrab();
+  if (g !== 'HORNS') hornsLatched = false;
   prevPalm.set(h.id, palmPx);
 }
 
@@ -315,11 +339,15 @@ addEventListener('pointerup', (e) => {
   if (!draggingMouse) return;
   draggingMouse = false;
   scene.holdVel = false;
-  if (Math.hypot(e.clientX - mouseStart.x, e.clientY - mouseStart.y) < 5) {
+  if (scene.focus < 0 && Math.hypot(e.clientX - mouseStart.x, e.clientY - mouseStart.y) < 5) {
     const idx = scene.pick(e.clientX, e.clientY, 80);
     scene.setSel(idx === scene.sel ? -1 : idx);
     showPart(scene.sel);
   }
+});
+addEventListener('dblclick', (e) => {
+  if (onUi(e)) return;
+  toggleFocus(scene.pick(e.clientX, e.clientY, 80));
 });
 addEventListener('wheel', (e) => {
   if (onUi(e)) return;
@@ -333,6 +361,8 @@ addEventListener('keydown', (e) => {
   } else if (e.key === 'ArrowRight') scene.next(1);
   else if (e.key === 'ArrowLeft') scene.next(-1);
   else if (e.key.toLowerCase() === 'r') scene.resetView();
+  else if (e.key.toLowerCase() === 'f') toggleFocus(scene.sel);
+  else if (e.key === 'Escape' && scene.focus >= 0) toggleFocus(-1);
   else if (e.key >= '1' && e.key <= '9' && +e.key <= MODELS.length) scene.setModel(+e.key - 1);
 });
 
@@ -369,7 +399,7 @@ function drawRing(h) {
   ctx.lineCap = 'round';
   ctx.shadowColor = 'rgba(242, 201, 76, 0.9)';
   ctx.shadowBlur = 14;
-  if (g === 'POINT') {
+  if (g === 'POINT' || g === 'HORNS') {
     const x = h.tip.x * W, y = h.tip.y * H;
     ctx.strokeStyle = '#f2c94c';
     ctx.lineWidth = 2.5;
@@ -435,9 +465,9 @@ function drawZoom(a, b) {
 }
 
 function drawLabels() {
-  const e = clamp((scene.shownExplode - 0.1) / 0.3, 0, 1);
+  const e = scene.focus >= 0 ? 1 : clamp((scene.shownExplode - 0.1) / 0.3, 0, 1);
   if (e <= 0.01 || scene.uniforms.uScatter.value > 0.3) return;
-  const pts = scene.labelPoints();
+  const pts = scene.labelPoints().filter((p) => scene.focus < 0 || p.i === scene.focus);
   const c = scene.centerScreen();
   const panelR = W > 900 ? 310 : 0;
   const left = [], right = [];
@@ -508,6 +538,8 @@ function frame(now) {
   if (!draggingExplode) rExplode.value = Math.round(clamp(scene.explode, 0, 1) * 100);
   $('v-explode').textContent = Math.round(clamp(scene.explode, 0, 1) * 100) + '%';
   $('b-explode').textContent = scene.explodeTarget > 0.5 ? 'Assemble' : 'Explode';
+  $('b-focus').textContent = scene.focus >= 0 ? 'Exit focus' : 'Focus on part';
+  $('b-focus').classList.toggle('on', scene.focus >= 0);
 
   scene.update(dt, t);
   drawOverlay();

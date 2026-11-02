@@ -89,6 +89,7 @@ input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border-radius
 }
 .btns button:hover, #toolbar button:hover { background: rgba(255, 255, 255, 0.13); }
 .btns button.on { border-color: rgba(242, 201, 76, 0.55); color: var(--gold); }
+#b-focus { grid-column: 1 / -1; }
 
 /* ------------------------------------------------ toolbar + chips */
 #toolbar { position: fixed; right: 14px; top: 14px; display: flex; gap: 6px; }
