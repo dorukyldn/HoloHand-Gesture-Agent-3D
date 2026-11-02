@@ -10,7 +10,6 @@ import { buildStrandbeest } from './strandbeest.js';
 import { buildScorpion } from './scorpion.js';
 import { buildOctopus } from './octopus.js';
 import { buildBee } from './bee.js';
-import { buildPhased } from './phased.js';
 
 // view = starting rotation (radians). parts are built lazily the first time a model is shown.
 export const MODELS = [
@@ -77,14 +76,6 @@ export const MODELS = [
     subtitle: "Theo Jansen's wind-walking linkage",
     view: { x: 0.2, y: -0.75, z: 0 },
     build: buildStrandbeest,
-  },
-  {
-    id: 'phased',
-    name: 'Phased Array',
-    category: 'Machines',
-    subtitle: '16 x 16 satellite antenna, steered with no moving parts',
-    view: { x: 0.5, y: -0.45, z: 0 },
-    build: buildPhased,
   },
   {
     id: 'scorpion',
