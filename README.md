@@ -1,5 +1,5 @@
-# HoloHand (gesture-agent-3d)
-## Dev / Creator = tubakhxn
+# HoloJarvis
+Based on HoloHand (gesture-agent-3d) by tubakhxn, MIT licence.
 
 Control exploded 3D models with your bare hands. Your webcam is the background, a hand skeleton and a gold ring follow your hand,
 and each model is a glowing point cloud that pulls apart into labelled parts so you can see what is inside.
@@ -42,13 +42,14 @@ Human Brain (4 lobes, cerebellum, brainstem, corpus callosum, thalamus, hippocam
 | Close your hand / fist | Pull it back together |
 | Move or twist your hand | Rotate and tilt the model |
 | Point (index finger) | Highlight the part under your fingertip. Hold still to lock it. |
+| Rock sign (index and pinky up) | Focus on the part your index finger is aiming at: the rest dims and it fills the screen. Again to exit. |
 | Pinch while over a part | Grab it, drag it out, release to snap it back |
 | Two hands | Move them apart or together to zoom |
 | Peace sign (hold ~0.3 s) | Jump to the next model |
 
 ## Mouse and keyboard
 
-Drag = rotate · scroll = zoom · click a part = inspect it · `Space` = explode / assemble · `←` `→` or `1`–`4` = switch model · `R` = reset view.
+Drag = rotate · scroll = zoom · click a part = inspect it · double-click or `F` = focus on it, `Esc` = exit · `Space` = explode / assemble · `←` `→` or `1`–`9` = switch model · `R` = reset view.
 Sliders in the left panel control the explosion and its intensity. The top-right buttons toggle camera background, hand skeleton, labels and fullscreen.
 
 ## Tips
