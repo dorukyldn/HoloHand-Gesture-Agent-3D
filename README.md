@@ -29,6 +29,7 @@ Cessna 172 (fuselage, wings, flaps, ailerons, tail surfaces, engine, propeller, 
 Hydraulic Excavator (tracks, slew ring, cab, engine, boom, stick, rams, bucket) ·
 Mechanical Watch (mainspring, going train, pallet fork, balance wheel, hairspring, dial) ·
 Strandbeest (Jansen linkage legs, crankshaft, frame, sails) ·
+Phased Array (housing, control board, RF board, feed network, beamformers, 256 patch elements, radome, steered beam) ·
 Robotic Scorpion (chassis, 8 legs, servos, claws, tail, stinger) ·
 Robotic Octopus (mantle, pressure hull, 8 arms, tendons, suckers, siphon) ·
 Robotic Bee (wings, flapping drive, compound eyes, abdomen, legs, pollen baskets) ·
