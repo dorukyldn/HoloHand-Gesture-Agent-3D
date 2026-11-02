@@ -24,6 +24,14 @@ Open the URL Vite prints (normally http://localhost:5173) and click **Start came
 Turbofan Jet Engine (fan, guide vanes, compressors, combustor, turbines, shaft, nozzle) ·
 Radial Aircraft Engine (crankcase, 9 cylinders, pistons, rods, crankshaft, exhaust ring, supercharger) ·
 Sports Car (body panels, chassis, engine, drivetrain, seats, wheels, brakes) ·
+V8 Engine (block, heads, pistons, rods, valves, crankshaft, camshaft, intake, exhaust) ·
+Cessna 172 (fuselage, wings, flaps, ailerons, tail surfaces, engine, propeller, gear) ·
+Hydraulic Excavator (tracks, slew ring, cab, engine, boom, stick, rams, bucket) ·
+Mechanical Watch (mainspring, going train, pallet fork, balance wheel, hairspring, dial) ·
+Strandbeest (Jansen linkage legs, crankshaft, frame, sails) ·
+Robotic Scorpion (chassis, 8 legs, servos, claws, tail, stinger) ·
+Robotic Octopus (mantle, pressure hull, 8 arms, tendons, suckers, siphon) ·
+Robotic Bee (wings, flapping drive, compound eyes, abdomen, legs, pollen baskets) ·
 Human Brain (4 lobes, cerebellum, brainstem, corpus callosum, thalamus, hippocampus, amygdala, hypothalamus)
 
 ## Gestures
@@ -55,7 +63,7 @@ src/main.js          app loop, hand overlay, gesture -> action, labels, UI
 src/handTracking.js  MediaPipe wrapper (2 hands, local files then CDN, GPU then CPU)
 src/gestureEngine.js landmarks -> gesture, openness, smoothed palm / fingertip / pinch, wrist roll
 src/scene.js         Three.js point-cloud renderer: explode, scatter transition, picking, part dragging
-src/models/          shapes.js (point sampling) + jet / radial / car / brain definitions
+src/models/          shapes.js (point sampling) + one file per model
 ```
 
 To add a model: write a `build()` returning parts (`P(name, description, color, [I(cloud, explodeDirection)])`) and register it in `src/models/index.js`.
